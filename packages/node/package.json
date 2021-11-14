@@ -1,0 +1,37 @@
+{
+  "name": "@voltaj/node",
+  "version": "0.0.1",
+  "description": "",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "nodemon src/index.js"
+  },
+  "keywords": [
+    "voltaj",
+    "voltaj node",
+    "video processing",
+    "video transcoding",
+    "video encoding"
+  ],
+  "author": "favger",
+  "license": "ISC",
+  "publishConfig": {
+    "access": "public"
+  },
+  "private": false,
+  "homepage": "https://voltaj.io",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/voltaj/core.git"
+  },
+  "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "dotenv": "^10.0.0",
+    "express": "^4.17.1",
+    "fluent-ffmpeg": "^2.1.2",
+    "mongoose": "^6.0.12"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.14"
+  }
+}

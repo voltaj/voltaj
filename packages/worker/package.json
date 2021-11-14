@@ -1,0 +1,31 @@
+{
+  "name": "@voltaj/worker",
+  "version": "0.1.0",
+  "description": "",
+  "main": "worker.js",
+  "scripts": {
+    "start": "node worker.js"
+  },
+  "keywords": [
+    "voltaj",
+    "voltaj worker",
+    "video processing",
+    "video transcoding",
+    "video encoding"
+  ],
+  "author": "favger",
+  "license": "ISC",
+  "publishConfig": {
+    "access": "public"
+  },
+  "private": false,
+  "homepage": "https://voltaj.io",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/voltaj/worker.git"
+  },
+  "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "fluent-ffmpeg": "^2.1.2"
+  }
+}
