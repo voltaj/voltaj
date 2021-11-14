@@ -1,6 +1,6 @@
 {
   "name": "@voltaj/worker",
-  "version": "0.1.0",
+  "version": "0.0.2",
   "description": "",
   "main": "worker.js",
   "scripts": {
@@ -22,7 +22,7 @@
   "homepage": "https://voltaj.io",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/voltaj/worker.git"
+    "url": "git+https://github.com/voltaj/voltaj.git"
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",

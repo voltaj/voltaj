@@ -1,6 +1,6 @@
 {
   "name": "@voltaj/core",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "",
   "main": "core.js",
   "scripts": {
@@ -22,7 +22,7 @@
   "homepage": "https://voltaj.io",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/voltaj/core.git"
+    "url": "git+https://github.com/voltaj/voltaj.git"
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",

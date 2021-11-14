@@ -1,2 +1,2 @@
-## Voltage Core
+## Voltage Node
 Lorem ipsum sit amet.
