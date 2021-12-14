@@ -21,6 +21,9 @@
     "type": "git",
     "url": "git+https://github.com/voltaj/voltaj.git"
   },
+  "_moduleAliases": {
+    "@app": "src"
+  },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "cors": "^2.8.5",
@@ -28,10 +31,15 @@
     "express": "^4.17.1",
     "fluent-ffmpeg": "^2.1.2",
     "helmet": "^4.6.0",
+    "ip": "^1.1.5",
     "joi": "^17.4.2",
+    "module-alias": "^2.2.2",
     "mongoose": "^6.0.12",
+    "node-downloader-helper": "^1.0.19",
     "pino": "^7.4.0",
-    "pino-pretty": "^7.2.0"
+    "pino-pretty": "^7.2.0",
+    "request": "^2.88.2",
+    "request-progress": "^3.0.0"
   },
   "devDependencies": {}
 }

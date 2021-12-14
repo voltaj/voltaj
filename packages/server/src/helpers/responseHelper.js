@@ -1,59 +1,49 @@
 const responseHelper = {};
 
-responseHelper.success = function (res, msg) {
-	var responseData = {
+responseHelper.success = function (res, message) {
+	return res.status(200).json({
 		status: true,
-		message: msg
-	};
-	
-	return res.status(200).json(responseData);
+		message
+	});
 };
 
-responseHelper.successWithData = function (res, msg, data) {
-	var responseData = {
+responseHelper.successWithData = function (res, data, message) {
+	return res.status(200).json({
 		status: true,
-		message: msg,
+		message,
 		data: data
-	};
-
-	return res.status(200).json(responseData);
+	});
 };
 
-responseHelper.error = function (res, msg) {
-	var responseData = {
+responseHelper.error = function (res, message) {
+	return res.status(500).json({
 		status: false,
-		message: msg,
-	};
-
-	return res.status(500).json(responseData);
+		message
+	});
 };
 
-responseHelper.notFound = function (res, msg) {
+responseHelper.notFound = function (res, message) {
 	var responseData = {
 		status: false,
-		message: msg,
+		message
 	};
 
 	return res.status(404).json(responseData);
 };
 
-responseHelper.validationErrorWithData = function (res, msg, data) {
-	var responseData = {
+responseHelper.validationErrorWithData = function (res, data, message) {
+	return res.status(400).json({
 		status: false,
-		message: msg,
+		message,
 		data: data
-	};
-
-	return res.status(400).json(responseData);
+	});
 };
 
-responseHelper.unauthorized = function (res, msg) {
-	var responseData = {
+responseHelper.unauthorized = function (res, message) {
+	return res.status(401).json({
 		status: false,
-		message: msg,
-	};
-
-	return res.status(401).json(responseData);
+		message
+	});
 };
 
 module.exports = responseHelper;

@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
-const logger = require('./logger');
-const serverConfig = require('../config/server.config');
+const logger = require('@app/utils/logger');
+const serverConfig = require('@app/config/server.config');
 
 const database = {
 	isConnectedToDb: false
@@ -30,6 +30,7 @@ database.connect = (options) => {
 		.connect(options.url, {
 			useNewUrlParser: true,
 			useUnifiedTopology: true,
+			dbName: options.dbName,
 			connectTimeoutMS
 		})
 		.then(() => {

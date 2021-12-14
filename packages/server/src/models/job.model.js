@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const jobConstants = require('@app/constants/job.constants');
 
 const jobSchema = new mongoose.Schema(
 	{
@@ -36,7 +37,8 @@ const jobSchema = new mongoose.Schema(
                 url: { type: String },
             }
         ],
-		status: { type: String, required: true },
+		status: { type: String, required: true, default: jobConstants.status.WAITING },
+		statusMessage: { type: String, required: false },
 		progress: { type: String, required: false }
 	},
 	{ 

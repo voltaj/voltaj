@@ -1,2 +1,2 @@
-## Voltage Node
+## Voltaj Server
 Lorem ipsum sit amet.

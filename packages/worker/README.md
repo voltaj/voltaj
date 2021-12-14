@@ -1,2 +1,2 @@
-## Voltage Worker
+## Voltaj Worker
 Lorem ipsum sit amet.

@@ -1,27 +1,13 @@
-const Joi = require('joi');
-const serverConstants = require('./constants/server.constants');
-const api = require('./utils/api');
-const database = require('./utils/database');
-const logger = require('./utils/logger');
-const serverService = require('./services/server.service');
-
-const voltajServerOptionsScheme = Joi.object({
-    database: Joi.object({
-        url: Joi.string(),
-        name: Joi.string(),
-        connectRetry: Joi.number()
-    }),
-    api: Joi.object({
-        host: Joi.string(),
-        port: Joi.number(),
-        secretToken: Joi.string().alphanum().min(16).max(64).required(),
-        cors: Joi.object({
-            origin: Joi.string().required(),
-            optionsSuccessStatus: Joi.number()
-        }),
-        healthPollingIntervalMs: Joi.number()
-    })
-})
+require('module-alias/register');
+const ip = require('ip');
+const serverConfig = require('@app/config/server.config');
+const api = require('@app/api');
+const Worker = require('@app/worker');
+const database = require('@app/utils/database');
+const logger = require('@app/utils/logger');
+const maintenanceService = require('@app/services/maintenance.service');
+const serverService = require('@app/services/server.service');
+const voltajServerScheme = require('@app/validations/voltajServer.validation');
 
 function voltajServer(options){
     options = options || {};
@@ -32,64 +18,69 @@ function voltajServer(options){
     }
 
     // options: joi scheme validate
-    const { value: optionVars, error } = voltajServerOptionsScheme.prefs({ errors: { label: 'key' } }).validate(options);
+    const { value: optionVars, error } = voltajServerScheme.prefs({ errors: { label: 'key' } }).validate(options);
 
     if (error) {
         throw new Error(`Config validation error: ${error.message}`);
     }
 
     // server options final
-    options = { ...serverConstants, ...optionVars };
+    options = { ...serverConfig, ...optionVars };
 
     // get database information
     const getDatabaseInfo = () => {
         return options.database;
+    }    
+    
+    // get database information
+    const getAddress = () => {
+        return `${ip.address()}:${options.api.port}`;
     }
 
     // run server
-    const run = () => {
-        // database connect
-        const dbConnection = database.connect(options.database);
-        dbConnection.then(() => {
-            // api module
-            if(options.api){
-                // api start
-                api.start(options.api);
-            }
+    const run = async () => {
+        try {
+            // database connect
+            await database.connect(options.database);
+
+            // api start
+            api.start(options.api);
 
             // create a server record for db & other processes
-            serverService.initServer({ 
-                interval: true,
-                options
-            });
-        });
+            serverService.initialize({ address: getAddress() })
+                .then((serverData) => new Worker({ serverData, ...options.worker }));
 
-        process.on('SIGINT', () => {
-            logger.info('Got SIGINT, gracefully shutting down');
-            stop();
-        });
-          
-        process.on('SIGTERM', () => {
-            logger.info('Got SIGTERM, gracefully shutting down');
-            stop();
-        });          
+            // maintenance service
+            maintenanceService.start(options);
+
+            // process events
+            process.on('SIGINT', async () => {
+                logger.info('Got SIGINT, gracefully shutting down');
+                await stop();
+            });
+            
+            process.on('SIGTERM', async () => {
+                logger.info('Got SIGTERM, gracefully shutting down');
+                await stop();
+            });
+        } catch(err){
+            throw new Error(err);
+        }       
     }
 
     // stop server
     const stop = async () => {
-        // api module
-        if(options.api){
-            api.stop();
-        }
-
-        await serverService.killServer();
+        await serverService.kill({ address: getAddress() });
+        api.stop();
         database.disconnect();
-        //clearInterval(app.intervalTimer);
-        //process.exit();
+        maintenanceService.stop();
+        console.clean();
+        process.exit();
     }
 
     return {
         getDatabaseInfo,
+        getAddress,
         options,
         run,
         stop

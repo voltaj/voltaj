@@ -1,2 +1,2 @@
-## Voltage Core
+## Voltaj Core
 Lorem ipsum sit amet.

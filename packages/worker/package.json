@@ -1,11 +1,8 @@
 {
   "name": "@voltaj/worker",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "",
-  "main": "worker.js",
-  "scripts": {
-    "start": "node worker.js"
-  },
+  "main": "src/index.js",
   "keywords": [
     "voltaj",
     "voltaj worker",
@@ -26,6 +23,10 @@
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
-    "fluent-ffmpeg": "^2.1.2"
+    "fluent-ffmpeg": "^2.1.2",
+    "joi": "^17.4.2",
+    "mongoose": "^6.0.13",
+    "pino": "^7.4.1",
+    "pino-pretty": "^7.2.0"
   }
 }

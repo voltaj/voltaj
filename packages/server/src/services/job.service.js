@@ -1,20 +1,36 @@
-const Job = require('../models/job.model');
-const logger = require('../utils/logger');
-const jobConstants = require('../constants/job.constants');
-const serverService = require('./server.service');
+const Job = require('@app/models/job.model');
+const logger = require('@app/utils/logger');
+const jobConstants = require('@app/constants/job.constants');
+const serverService = require('@app/services/server.service');
 
 const jobService = {};
 
-jobService.getAllJobs = async () => {
-	return Job.find();
+jobService.getAll = async (filter) => {
+	return Job.find(filter);
 }
 
-jobService.getJobById = async (id) => {
+jobService.getById = async (id) => {
 	return Job.findById(id);
 }
 
-jobService.createJob = async (jobBody) => {
-	const currentServer = await serverService.getCurrentServer();
+jobService.isMatchWithWorker = async (jobId, workerId) => {
+	return Job.exists({ 
+		id: jobId,
+		workerId
+	});
+}
+
+jobService.getAWaiting = async () => {
+	return Job.findOne({ 
+		status: jobConstants.status.WAITING,
+		workerId: { $exists: false },
+		input: { $exists: true },
+		output: { $exists: true },
+	});
+}
+
+jobService.create = async (data) => {
+	const currentServer = await serverService.getCurrent();
 
 	if(!currentServer){
 		throw new Error("Server record not found into server collection!");
@@ -22,22 +38,28 @@ jobService.createJob = async (jobBody) => {
 
 	return Job.create({
 		serverId: currentServer._id,
-		status: jobConstants.status.WAITING,
-		...jobBody
+		...data
 	});
 };
 
-jobService.updateJob = async (job) => {
-	const { ...updateData } = job._doc;
-	return Job.findByIdAndUpdate(job.id, updateData);
+jobService.updateAll = async (filter, update) => {
+	return Job.updateMany(filter, update);
 };
 
-jobService.updateJobStatus = async (id, status) => {
+jobService.updateByJob = async (job, data) => {
+	return Job.findByIdAndUpdate(job.id, data);
+};
+
+jobService.updateById = async (id, data) => {
+	return Job.findByIdAndUpdate(id, data);
+};
+
+jobService.updateStatusById = async (id, status) => {
 	return Job.findByIdAndUpdate(id, { status });
 };
 
-jobService.deleteJobById = async (jobId) => {
-	const job = await jobService.getJobById(jobId);
+jobService.deleteById = async (jobId) => {
+	const job = await jobService.getById(jobId);
 
 	if(!job){
 		throw new Error("Job not found");

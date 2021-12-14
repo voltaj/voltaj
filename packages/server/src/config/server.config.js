@@ -1,15 +1,19 @@
 const config = {
+    database: {
+        url: "mongodb://localhost/voltaj",
+        connectRetry: 5
+    },
     api: {
         host: "localhost",
         port: 3000,
         secretToken: false,
+        routePrefix: "/api",
         cors: false,
         healthPollingIntervalMs: (1000 * 60 * 5), // 5 min
     },
-    database: {
-        url: "mongodb://localhost/voltaj",
-        name: "voltaj",
-        connectRetry: 5
+    worker: {
+        intervalSeconds: 10,
+        inputsFolder: "inputs"
     }
 }
 

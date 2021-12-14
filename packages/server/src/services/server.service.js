@@ -1,59 +1,89 @@
-const os = require('os');
-const Server = require('../models/server.model');
-const serverConstants = require('../constants/server.constants');
+const Server = require('@app/models/server.model');
+const serverConstants = require('@app/constants/server.constants');
+const workerService = require('@app/services/worker.service');
+const workerConstants = require('@app/constants/worker.constants');
 
 const serverService = {};
 
-serverService.initServer = async ({ interval = false, options }) => {
-	await serverService.createOrUpdateServer({
-		address: os.hostname(),
-		status: serverConstants.status.ACTIVE
-	});
+serverService.initialize = ({ address }) => {
+	return new Promise(async (resolve, rejected) => {
+		try{
+			// get server data
+			const server = await serverService.createOrUpdate({
+				address,
+				status: serverConstants.status.ACTIVE
+			});
 
-	if(interval){
-		setInterval(() => serverService.initServer, options.healthPollingIntervalMs); // during 5 min
-	}
+			// change workers status
+			await workerService.updateAll({
+				serverId: server.id
+			}, {
+				$set: {
+					status: workerConstants.status.DEAD
+				}
+			});
+
+			// send server data
+			resolve(server);
+		} catch(err){
+			rejected(err);
+		}
+	})
 }
 
-serverService.killServer = async () => {
-	await serverService.createOrUpdateServer({
-		address: os.hostname(),
+serverService.kill = async ({ address }) => {
+	// change server status like "DEAD"
+	const server = await serverService.createOrUpdate({
+		address,
 		status: serverConstants.status.DEAD
 	});
+
+	// change workers status
+	await workerService.updateAll({
+		serverId: server.id
+	}, {
+		$set: {
+			status: workerConstants.status.DEAD
+		}
+	});
 }
 
-serverService.getCurrentServer = async () => {
-	return Server.findOne({ address: os.hostname() });
+serverService.getCurrent = async (data) => {
+	return Server.findOne(data);
 }
 
-serverService.getServerById = async (id) => {
+serverService.getById = async (id) => {
 	return Server.findById(id);
 }
 
-serverService.getServers = async () => {
-	return Server.find();
+serverService.getAll = async (filter) => {
+	return Server.find(filter);
 }
 
-serverService.createServer = async (data) => {
+serverService.create = async (data) => {
 	return Server.create(data);
 };
 
-serverService.createOrUpdateServer = async (data) => {
+serverService.createOrUpdate = async (data) => {
 	const existingServer = await Server.findOne({ address: data.address });
 
 	if(existingServer){
-		return serverService.updateServer(existingServer, data);
+		return serverService.update(existingServer, data);
 	} 
 
-	return serverService.createServer(data);
+	return serverService.create(data);
 };
 
-serverService.updateServer = async (server, effectedProps) => {
+serverService.update = async (server, effectedProps) => {
 	return Server.findByIdAndUpdate(server, effectedProps);
 };
 
-serverService.deleteServerById = async (serverId) => {
-	const server = await serverService.getServerById(serverId);
+serverService.updateAll = async (filter, update) => {
+	return Server.updateMany(filter, update)
+};
+
+serverService.deleteById = async (serverId) => {
+	const server = await serverService.getById(serverId);
 
 	if(!server){
 		throw new Error("Server not found");
