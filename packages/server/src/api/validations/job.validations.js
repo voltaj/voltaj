@@ -12,7 +12,7 @@ const createJobScheme = {
         outputs: Joi.array().required().items({
             format: Joi.string().required(),
             resolution: Joi.string().required(),
-            quality: Joi.string(),
+            quality: Joi.number(),
         }),
         callbacks: Joi.array().required().items({
             type: Joi.string().required().default("webhook"),

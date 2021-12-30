@@ -2,6 +2,7 @@ const workerThreads = require('worker_threads');
 const { DownloaderHelper, DH_STATES } = require('node-downloader-helper');
 const path = require('path');
 const fs = require('fs');
+const axios = require('axios');
 const workerConstants = require('@app/constants/worker.constants');
 const jobConstants = require('@app/constants/job.constants');
 const workerService = require('@app/services/worker.service');
@@ -28,7 +29,7 @@ class Worker {
         await this.workerRegister();
 
         if(!this.currentWorker){
-            logger.info(`[Pending Jobs] no worker found`);
+            logger.info(`[Finding Jobs] no worker found`);
         }
         
         // find a waiting job on db
@@ -37,20 +38,21 @@ class Worker {
             // download job input
             await this.downloadJobInput();
         } else {
-            logger.info(`[Pending Jobs] no pending jobs were found`);
+            logger.info(`[Finding Jobs] no pending jobs were found`);
         }
     }
     
     async downloadJobInput(){
-        logger.info(`finded waiting a job:${this.currentJob.id}`);  
+        logger.info(`[Job] finded id:${this.currentJob.id}`);  
 
         // Destionation
         //const destinationFilePath = `uploads/${this.currentJob.id}/original${path.extname(this.currentJob.input)}`;
-        const destinationFolder = path.resolve(this.options.inputsFolder, this.currentJob.id);
+        const destinationFolder = path.resolve(this.options.jobsFolder, this.currentJob.id);
 
         // Create job directory if haven't already
         if (!fs.existsSync(destinationFolder)){
             await fs.mkdirSync(destinationFolder, { recursive: true });
+            await fs.mkdirSync(path.join(destinationFolder, "outputs"), { recursive: true });
         }
 
         // `original${path.extname(this.currentJob.input)}`;
@@ -73,8 +75,11 @@ class Worker {
 
         // downloader: start listener
         downloader.on('start', (data) => {
-            console.log('downloader:(start):', data, JSON.stringify(data));
-            logger.info(`onStart:`);  
+            //console.log('downloader:(start):', data, JSON.stringify(data));
+            this.sendCallback({ 
+                status: jobConstants.status.DOWNLOADING, 
+            }); 
+            logger.info(`[Job] ${jobConstants.status.DOWNLOADING} (%0.0)`);  
         });
 
         // downloader: progress listener
@@ -83,13 +88,13 @@ class Worker {
                 status: jobConstants.status.DOWNLOADING,
                 progress: stats.progress.toFixed(1)
             });
-            logger.info(`onProgress:${stats.progress}`);              
+            logger.info(`[Job] ${jobConstants.status.DOWNLOADING} (%${stats.progress.toFixed(1)})`);              
         });
 
         // downloader: timeout listener
         downloader.on('timeout', (data) => {
             console.log('downloader:(timeout):', data, JSON.stringify(data || {}));
-            logger.info(`onTimeout:${data}`);  
+            logger.info(`[Job] timeout`);  
         })
         
         // downloader: error listener
@@ -104,26 +109,42 @@ class Worker {
                 status: jobConstants.status.ERROR,
                 statusMessage: message
             });
+            this.sendCallback({ 
+                status: jobConstants.status.ERROR, 
+            }); 
+
+            logger.info(`[Job] error ${jobConstants.status.DOWNLOADING}`);     
         })
 
         // downloader: stateChanged listener
         downloader.on('stateChanged', (state) => {
-            console.log('stateChanged:', state);
+            //console.log('stateChanged:', state);
             switch(state){
                 case DH_STATES.STARTED:
                     
                 break;
 
                 case DH_STATES.DOWNLOADING:
-                    this.updateJob({ status: jobConstants.status.DOWNLOADING, progress: 0  });
+                    this.updateJob({ 
+                        status: jobConstants.status.DOWNLOADING, 
+                        progress: 0 
+                    });
                 break;
 
                 case DH_STATES.FINISHED:
-                    this.updateJob({ status: jobConstants.status.DOWNLOADING, progress: 100 });
+                    this.updateJob({ 
+                        status: jobConstants.status.DOWNLOADING, 
+                        progress: 100 
+                    });
                 break;    
                 
                 case DH_STATES.FAILED:
-                    this.updateJob({ status: jobConstants.status.FAILED });
+                    this.updateJob({ 
+                        status: jobConstants.status.FAILED 
+                    });
+                    this.sendCallback({ 
+                        status: jobConstants.status.FAILED, 
+                    }); 
                     this.reset();
                 break;                
             }
@@ -137,7 +158,7 @@ class Worker {
                 downloadInfo
             });
 
-            logger.info(`onEnd:${this.currentJob.id}`);  
+            logger.info(`[Job] end ${jobConstants.status.DOWNLOADING}`) 
         });
 
         // downloader: start
@@ -148,13 +169,13 @@ class Worker {
     async jobEncoder({ type = "video", downloadInfo }) {
         const workerNode = new workerThreads.Worker(`${__dirname}/encoders/${type}.encoder.js`, {
             workerData: {
-                job: this.currentJob.toObject(),
+                job: this.currentJob.toObject({ virtuals: true }),
                 downloadInfo
             }
         });
 
         workerNode.on('online', () => {
-            logger.info(`worker online`);
+            logger.info(`[Worker] online`);
             this.updateWorker({ 
                 status: workerConstants.status.INACTIVE 
             });
@@ -163,6 +184,9 @@ class Worker {
                 workerId: this.currentWorker.id,
                 progress: 0
             });
+            this.sendCallback({ 
+                status: jobConstants.status.IN_PROGRESS, 
+            });   
         });
     
         workerNode.on('message', async (response) => {
@@ -170,39 +194,51 @@ class Worker {
 
             switch(response.type){
                 case workerConstants.types.PROGRESS:
-                    this.updateJob({ 
-                        status: jobConstants.status.IN_PROGRESS,
-                        progress: response.progress 
-                    });                    
-                    logger.info(`worker message: ${response.progress}`);
+                    await this.updateJob({ 
+                        status: jobConstants.status.IN_PROGRESS, 
+                        progress: response.percent 
+                    });     
+                    //await this.sendCallback({ 
+                    //    status: jobConstants.status.IN_PROGRESS, 
+                    //    progress: response.percent 
+                    //});               
+                    logger.info(`[Worker] ffmpeg progress (%${response.percent.toFixed(1)})`);
                 break;
 
                 case workerConstants.types.ERROR:
-                    this.updateJob({ 
-                        status: jobConstants.status.ERROR
+                    await this.updateJob({ 
+                        status: jobConstants.status.ERROR 
                     });
-                    logger.error(`worker message error: ${new Error(`An error occurred while encoding. ${err}`)}`)                    
+                    await this.sendCallback({ 
+                        status: jobConstants.status.ERROR 
+                    });
+                    logger.error(`[Worker] error: ${new Error(response.message)}`)                    
                 break;
                 
                 case workerConstants.types.DONE:
-                    await this.updateJob({ status: jobConstants.status.COMPLATED })
+                    await this.updateJob({ 
+                        status: jobConstants.status.COMPLATED 
+                    });
+                    await this.sendCallback({ 
+                        status: jobConstants.status.COMPLATED 
+                    });
                     //this.reset();                    
-                    logger.info(`worker process: ${response.type}`);
+                    logger.info(`[Worker] process done ${response.type}:${response.message}`);
                 break;                
             }      
         });
     
         workerNode.on('error', (err) => {
-            logger.error(`worker error ${new Error(`An error occurred while encoding. ${err}`)}`)
+            logger.error(`[Worker] error ${new Error(`An error occurred while encoding. ${err}`)}`)
             this.reset();
             //callback(new Error(`An error occurred while encoding. ${err}`));
         });
     
         workerNode.on('exit', (code) => {
             if (code !== 0) {
-                logger.error(`worker stopped with exit code ${code}`);
+                logger.error(`[Worker][Thread] stopped with exit code ${code}`);
             } else {
-                logger.info(`worker exit code: ${code}`)
+                logger.info(`[Worker][Thread] exit code: ${code}`)
             }
             this.reset();
         });
@@ -251,7 +287,9 @@ class Worker {
                     await this.currentWorker.save();
                     resolve(true);
                 } else {
-                    await this.updateWorker({ status: workerConstants.status.IDLE });
+                    await this.updateWorker({ 
+                        status: workerConstants.status.IDLE 
+                    });
                     this.clear();
                     resolve(false);
                 }
@@ -267,7 +305,53 @@ class Worker {
     async updateWorker(data){
         if(!this.currentWorker || !data) return;
         this.currentWorker = await workerService.updateById(this.currentWorker.id, data);
-    }    
+    }   
+    
+    async sendCallback(data){
+        const job = this.currentJob;
+        
+        if(!job || !data) return;
+        if(!job.callbacks || !job.callbacks.length) return;
+
+        job.callbacks.forEach((callback, index) => {
+            axios.post(callback.url, {
+                jobId: job.id,
+                ...data
+            }).then((response) => {
+                jobService.updateCallbackByFilter(
+                    { 
+                        id: job.id, 
+                        'callbacks.id': callback.id 
+                    }, 
+                    {
+                        $push: {
+                            'callbacks.$.requests': {
+                                status: response.status,
+                                data: response.config.data,
+                                response: response.data
+                            }
+                        }
+                    }
+                );
+            }).catch((err) => {
+                jobService.updateCallbackByFilter(
+                    { 
+                        id: job.id, 
+                        'callbacks.id': callback.id 
+                    }, 
+                    {
+                        $push: {
+                            'callbacks.$.requests': {
+                                status: err.response.status,
+                                data: err.config.data,
+                                error: `${new Error(err)}`
+                            }
+                        }
+                    }
+                );
+            });
+        });
+    }
 
     isBusy(){
         return (this.currentWorker || false) && this.currentWorker.status === workerConstants.status.INACTIVE;
@@ -292,8 +376,10 @@ class Worker {
 
     async stop(){
         clearInterval(this.intervalTimer);
-        await this.updateWorker({ status: workerConstants.status.IDLE });
-        logger.info(`worker disconnect`);
+        await this.updateWorker({ 
+            status: workerConstants.status.IDLE 
+        });
+        logger.info(`[Worker] disconnect`);
     }
 }
 

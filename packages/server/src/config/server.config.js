@@ -13,7 +13,7 @@ const config = {
     },
     worker: {
         intervalSeconds: 10,
-        inputsFolder: "inputs"
+        jobsFolder: "jobs"
     }
 }
 

@@ -8,9 +8,9 @@ const jobSchema = new mongoose.Schema(
 		input: { type: String, required: true },
 		outputs: [
             { 
-                output: { type: String },
                 path: { type: String },
-                resolution: { type: String },
+                format: { type: String, required: true },
+                resolution: { type: String, required: true },
                 duration: { type: String },
                 offset: { type: String },
                 video_codec: { type: String },
@@ -26,15 +26,24 @@ const jobSchema = new mongoose.Schema(
                 transpose: { type: String },
                 vflip: { type: String },
                 hflip: { type: String },
-                watermark: { type: String },
-                url: { type: String },
-                position: { type: String },
+                watermark: {
+                    url: { type: String },
+                    position: { type: String },
+                },
             }
         ],
 		callbacks: [
             { 
-                type: { type: String },
-                url: { type: String },
+                type: { type: String, required: true },
+                url: { type: String, required: true },
+                requests: [
+                    {
+                        status: { type: Number },
+                        data: { type: mongoose.SchemaTypes.Mixed },
+                        response: { type: mongoose.SchemaTypes.Mixed },
+                        error: { type: String },
+                    }
+                ]
             }
         ],
 		status: { type: String, required: true, default: jobConstants.status.WAITING },

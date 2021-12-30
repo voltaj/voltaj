@@ -1,3 +1,3 @@
 const { parentPort, workerData } = require('worker_threads');
 
-console.log('video.encoder.js')
+console.log('image.encoder.js')

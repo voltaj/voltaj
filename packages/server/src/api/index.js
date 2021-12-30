@@ -42,6 +42,14 @@ api.start = (config) => {
         app.use(cors(corsOptions));
     }
 
+    app.use(`${config.routePrefix}/callback`, (req, res) => {
+        if(Math.ceil(Math.random() * 2) === 1){
+            return res.status(200).send("OK");
+        }
+
+        return res.status(200).json({ status: true });
+    });
+
     // api token verify middleware
     app.use(verifyApiToken(config.secretToken));
 

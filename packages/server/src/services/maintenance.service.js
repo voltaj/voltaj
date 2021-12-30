@@ -45,7 +45,6 @@ maintenance.checkup = async () => {
     
     // check workers
     const updatedWorkers = await workerService.updateAll({ 
-        serverId: currentServer.id,
         status: {
             $ne: workerConstants.status.DEAD
         },

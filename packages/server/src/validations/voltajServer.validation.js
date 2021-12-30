@@ -19,7 +19,7 @@ const voltajServerOptionsScheme = Joi.object({
     }).required(),
     worker: Joi.object({
         count: Joi.number(),
-        inputsFolder: Joi.string(),
+        jobsFolder: Joi.string(),
         intervalSeconds: Joi.number(),
     })
 });

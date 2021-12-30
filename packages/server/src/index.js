@@ -2,7 +2,7 @@ require('module-alias/register');
 const ip = require('ip');
 const serverConfig = require('@app/config/server.config');
 const api = require('@app/api');
-const Worker = require('@app/worker');
+const Worker = require('@app/worker/worker.engine');
 const database = require('@app/utils/database');
 const logger = require('@app/utils/logger');
 const maintenanceService = require('@app/services/maintenance.service');

@@ -58,6 +58,10 @@ jobService.updateStatusById = async (id, status) => {
 	return Job.findByIdAndUpdate(id, { status });
 };
 
+jobService.updateCallbackByFilter = async (filter, update) => {
+	return Job.updateOne(filter, update);
+};
+
 jobService.deleteById = async (jobId) => {
 	const job = await jobService.getById(jobId);
 
